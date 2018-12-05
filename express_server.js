@@ -1,10 +1,15 @@
-var express = require("express");
-var app = express();
 var PORT = 8080; // default port 8080
-app.set("view engine", "ejs");
+var express = require("express");
+var cookieParser = require('cookie-parser');
 const bodyParser = require("body-parser");
+
+var app = express();
+app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
-//hello
+app.use(cookieParser());
+
+
+
 function generateRandomString() {
   let array = [];
   let alphabet = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z'];
@@ -27,8 +32,14 @@ app.get("/", (request, response) => {
   response.send("Hello!");
 });
 
+app.post("/login", (request, response) => {
+  response.cookie('username',request.body.username);
+
+  response.redirect('/urls/');
+});
+
 app.get("/urls", (request, response) => {
-  let templateVars = { urls: urlDatabase };
+  let templateVars = { urls: urlDatabase, username: request.cookies["username"] };
   response.render("urls_index", templateVars);
 });
 
@@ -37,30 +48,29 @@ app.post("/urls/:short/delete", (request, response) => {
   response.redirect('/urls/');
 });
 
-app.post("/urls/:short/update", (request, response) => {
+app.post("/logout", (request, response) => {
+  response.clearCookie("username");
+  response.redirect('/urls/');
+});
 
+app.post("/urls/:short/update", (request, response) => {
   urlDatabase[request.params.short] = request.body.longURL;
   response.redirect('/urls/');
-
 });
 
 app.get("/urls/new", (request, response) => {
-  response.render("urls_new");
+  response.render("urls_new", {username: request.cookies["username"]});
 });
 
 app.post("/urls", (request, response) => {
-
   let short = generateRandomString();
   urlDatabase[short] = request.body.longURL;
-
   response.redirect(`/urls/${short}`);
-
-
 });
 
 app.get("/urls/:id", (request, response) => {
 
-  let templateVars = { shortURL: request.params.id, urls: urlDatabase };
+  let templateVars = { shortURL: request.params.id, urls: urlDatabase, username: request.cookies["username"]};
   if(templateVars.shortURL){
     response.render("urls_show", templateVars);
   }
