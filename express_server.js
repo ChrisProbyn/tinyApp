@@ -8,7 +8,8 @@ app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
 
-
+// TO DO:
+// if i go to urls/anything it tries to update it
 
 function generateRandomString() {
   let array = [];
@@ -28,6 +29,17 @@ function checkEmailForDuplicate(email) {
   for (var i in users) {
 
     if(users[i]["email"] === email){
+
+      return users[i]["id"];
+    }
+    return false;
+  }
+}
+function checkEmailPassword(email,password) {
+
+  for (var i in users) {
+
+    if(users[i]["email"] === email && users[i]["password"] === password){
 
       return true;
     }
@@ -57,13 +69,29 @@ app.get("/", (request, response) => {
   response.send("Hello!");
 });
 
+app.get( "/login", (request, response) => {
+  let templateVars = { urls: urlDatabase, users: users[request.cookies["userID"]] };
+  response.render("login", templateVars);
+});
+
 app.post("/login", (request, response) => {
-  response.cookie('username',request.body.username);
-  response.redirect('/urls/');
+
+  var email = request.body.email;
+  var password = request.body.password;
+  var id = checkEmailForDuplicate(email);
+
+  if(checkEmailPassword(email,password)){
+    response.cookie('userID',id);
+    response.redirect('/urls/');
+  }
+  else {
+    response.status(403);
+    response.redirect('/login/');
+  }
 });
 
 app.get("/register", (request, response) => {
-  let templateVars = { urls: urlDatabase, username: request.cookies["username"] };
+  let templateVars = { urls: urlDatabase, user: users[request.cookies["userID"]] };
   response.render("register", templateVars);
 });
 
@@ -74,20 +102,22 @@ app.post("/register", (request, response) => {
 
     users[userID] = { id: userID, email: request.body.email, password: request.body.password};
     response.cookie('userID', userID);
+
     response.redirect('/urls/');
   } else if (checkEmailForDuplicate(request.body.email)) {
       response.status(400);
-      alert('hello')
+      response.render('notfound')
   }
   else {
       response.status(400);
-      alert("a")
+      response.render('notfound')
   }
 
 });
 
 app.get("/urls", (request, response) => {
-  let templateVars = { urls: urlDatabase, username: request.cookies["username"] };
+
+  let templateVars = { urls: urlDatabase, user: users[request.cookies["userID"]] };
   response.render("urls_index", templateVars);
 });
 
@@ -97,7 +127,7 @@ app.post("/urls/:short/delete", (request, response) => {
 });
 
 app.post("/logout", (request, response) => {
-  response.clearCookie("username");
+  response.clearCookie("userID");
   response.redirect('/urls/');
 });
 
@@ -107,7 +137,7 @@ app.post("/urls/:short/update", (request, response) => {
 });
 
 app.get("/urls/new", (request, response) => {
-  response.render("urls_new", {username: request.cookies["username"]});
+  response.render("urls_new", {user: users[request.cookies["userID"]]});
 });
 
 app.post("/urls", (request, response) => {
@@ -118,7 +148,7 @@ app.post("/urls", (request, response) => {
 
 app.get("/urls/:id", (request, response) => {
 
-  let templateVars = { shortURL: request.params.id, urls: urlDatabase, username: request.cookies["username"]};
+  let templateVars = { shortURL: request.params.id, urls: urlDatabase, user: users[request.cookies["userID"]]};
   if(templateVars.shortURL){
     response.render("urls_show", templateVars);
   }
