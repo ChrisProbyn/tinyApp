@@ -2,11 +2,23 @@ var PORT = 8080; // default port 8080
 var express = require("express");
 var cookieParser = require('cookie-parser');
 const bodyParser = require("body-parser");
+const bcrypt = require('bcrypt');
+var cookieSession = require('cookie-session')
 
 var app = express();
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: [1],
+
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}))
+
+
+
 
 // TO DO:
 // if i go to urls/anything it tries to update it
@@ -30,20 +42,18 @@ function checkEmailForDuplicate(email) {
     if(users[i]["email"] === email){
       return users[i]["id"];
     }
-
   }
   return false;
 }
 
-function checkEmailPassword(email,password) {
+function checkEmailPassword(email) {
   for (var i in users) {
-
-    if(users[i]["email"] === email && users[i]["password"] === password){
-      return true;
+    if(users[i]["email"] === email){
+      return users[i].password;
     }
+}
 
-  }
-  return false;
+
 }
 // function urlsOwnedByID(userID){
 //   var array = [];
@@ -56,22 +66,37 @@ function checkEmailPassword(email,password) {
 //     //return array;
 //     return false;
 // }
+
+function urlsForUser(id) {
+  var showUrls = {};
+  for (var shortURL in urlDatabase){
+    if( urlDatabase[shortURL].owner === id ){
+      showUrls[shortURL] = urlDatabase[shortURL];
+    }
+  }
+  return showUrls;
+}
+
 var urlDatabase = {
   "b2xVn2": {  longURL: "http://www.lighthouselabs.ca" , owner : "userRandomID"} ,
 
   "9sm5xK": {  longURL: "http://www.google.com", owner : "user2RandomID"}
 };
 
+
+const hashedPasswordTestOne = bcrypt.hashSync("purple-monkey-dinosaur", 10);
+const hashedPasswordTestTwo = bcrypt.hashSync("dishwasher-funk", 10);
+
 const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: hashedPasswordTestOne
   },
  "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: hashedPasswordTestTwo,
   }
 }
 
@@ -87,11 +112,14 @@ app.get( "/login", (request, response) => {
 app.post("/login", (request, response) => {
 
   var email = request.body.email;
-  var password = request.body.password;
+
+  var hashedPassword = checkEmailPassword(email)
+  //write a function that will get the hashed password for the email which you will supply
+   bcrypt.compareSync(request.body.password, hashedPassword);
   var id = checkEmailForDuplicate(email);
 
 
-  if(checkEmailPassword(email,password)){
+  if(bcrypt.compareSync(request.body.password, hashedPassword)){
     response.cookie('userID',id);
     response.redirect('/urls/');
   }
@@ -108,11 +136,12 @@ app.get("/register", (request, response) => {
 
 app.post("/register", (request, response) => {
   let userID = generateRandomString ();
+  request.session.user_id = userID;
 
   if(request.body.email && request.body.password && !checkEmailForDuplicate(request.body.email) ){
-
-    users[userID] = { id: userID, email: request.body.email, password: request.body.password};
-    response.cookie('userID', userID);
+    const hashedPassword = bcrypt.hashSync(request.body.password, 10);
+    users[userID] = { id: request.session.user_id, email: request.body.email, password: hashedPassword}; //add bcrypt
+    response.cookie('userID', request.session.user_id);
 
     response.redirect('/urls/');
   } else if (checkEmailForDuplicate(request.body.email)) {
@@ -127,9 +156,15 @@ app.post("/register", (request, response) => {
 });
 
 app.get("/urls", (request, response) => {
+  if(request.cookies["userID"]){
+    var urlGenerated = urlsForUser(request.cookies["userID"]);
+    let templateVars = { urls: urlGenerated, user: users[request.cookies["userID"]] };
+    response.render("urls_index", templateVars);
+  }
+  else {
+    response.redirect("/login")
+  }
 
-  let templateVars = { urls: urlDatabase, user: users[request.cookies["userID"]] };
-  response.render("urls_index", templateVars);
 });
 
 app.post("/urls/:short/delete", (request, response) => {
@@ -146,8 +181,12 @@ app.post("/logout", (request, response) => {
 });
 
 app.post("/urls/:short/update", (request, response) => {
-  urlDatabase[request.params.short] = request.body.longURL;
-  response.redirect('/urls/');
+
+  if(urlDatabase[request.params.short].owner === request.cookies["userID"]){
+    urlDatabase[request.params.short].longURL = request.body.longURL;
+    response.redirect('/urls/')
+  }
+  response.redirect('/urls/'+request.params.short);
 });
 
 app.get("/urls/new", (request, response) => {
@@ -165,15 +204,23 @@ app.post("/urls", (request, response) => {
 
 app.get("/urls/:id", (request, response) => {
 
-  let templateVars = { shortURL: request.params.id, urls: urlDatabase, user: users[request.cookies["userID"]]};
+  let flag = false;
 
-    if(urlDatabase[request.params.id].owner === request.cookies["userID"]){
-      response.render("urls_show", templateVars);
+  let templateVars = { shortURL: request.params.id, urls: urlDatabase, user: users[request.cookies["userID"]]};
+    for( var i in urlDatabase){
+      if(templateVars.shortURL === i){
+        flag = true;
+      }
     }
 
-  else{
-    response.redirect("/urls")
-  }
+    if(flag && request.cookies["userID"]){
+
+      response.render("urls_show", templateVars);
+    } else {
+      response.redirect("/urls")
+    }
+
+
 });
 
 

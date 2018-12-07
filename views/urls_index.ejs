@@ -12,8 +12,9 @@
         <li>
 
         <form method="POST" action="/urls/<%= url %>/delete">
+          shortUrl Generated ==>
           <%= url + ':  '%>
-          <a href = "<%= urls[url] %>"><%= urls[url] %></a>
+          <a href = "<%= urls[url]['longURL'] %>"><%= urls[url]["longURL"] %></a>
           <a href="/urls/<%= url %>">edit</a>
             <input type="submit" value="delete">
         </form>
