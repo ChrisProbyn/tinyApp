@@ -25,31 +25,41 @@ function generateRandomString() {
 
 
 function checkEmailForDuplicate(email) {
-
   for (var i in users) {
 
     if(users[i]["email"] === email){
-
       return users[i]["id"];
     }
-    return false;
-  }
-}
-function checkEmailPassword(email,password) {
 
+  }
+  return false;
+}
+
+function checkEmailPassword(email,password) {
   for (var i in users) {
 
     if(users[i]["email"] === email && users[i]["password"] === password){
-
       return true;
     }
-    return false;
-  }
-}
 
+  }
+  return false;
+}
+// function urlsOwnedByID(userID){
+//   var array = [];
+//   //j is short url
+//     for (var j in urlDatabase){
+//       urlDatabase[j].owner === userID
+//         //array.push(urlDatabase[j]);
+//         return true;
+//     }
+//     //return array;
+//     return false;
+// }
 var urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {  longURL: "http://www.lighthouselabs.ca" , owner : "userRandomID"} ,
+
+  "9sm5xK": {  longURL: "http://www.google.com", owner : "user2RandomID"}
 };
 
 const users = {
@@ -79,6 +89,7 @@ app.post("/login", (request, response) => {
   var email = request.body.email;
   var password = request.body.password;
   var id = checkEmailForDuplicate(email);
+
 
   if(checkEmailPassword(email,password)){
     response.cookie('userID',id);
@@ -122,7 +133,10 @@ app.get("/urls", (request, response) => {
 });
 
 app.post("/urls/:short/delete", (request, response) => {
-  delete urlDatabase[request.params.short];
+
+  if(urlDatabase[request.params.short].owner === request.cookies["userID"]){
+    delete urlDatabase[request.params.short];
+  }
   response.redirect('/urls/');
 });
 
@@ -137,7 +151,10 @@ app.post("/urls/:short/update", (request, response) => {
 });
 
 app.get("/urls/new", (request, response) => {
-  response.render("urls_new", {user: users[request.cookies["userID"]]});
+  if(request.cookies["userID"]){
+    response.render("urls_new", {user: users[request.cookies["userID"]]});
+  }
+  response.redirect("/login");
 });
 
 app.post("/urls", (request, response) => {
@@ -149,11 +166,13 @@ app.post("/urls", (request, response) => {
 app.get("/urls/:id", (request, response) => {
 
   let templateVars = { shortURL: request.params.id, urls: urlDatabase, user: users[request.cookies["userID"]]};
-  if(templateVars.shortURL){
-    response.render("urls_show", templateVars);
-  }
+
+    if(urlDatabase[request.params.id].owner === request.cookies["userID"]){
+      response.render("urls_show", templateVars);
+    }
+
   else{
-    alert('no url by that name');
+    response.redirect("/urls")
   }
 });
 
