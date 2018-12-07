@@ -5,24 +5,19 @@
 </head>
 <body>
     <% include ./partials/_header %>
-
     <a href="/urls/new">Add a new URL</a>
     <ul>
       <% for(var url in urls) { %>
         <li>
-
-        <form method="POST" action="/urls/<%= url %>/delete">
-          shortUrl Generated ==>
-          <%= url + ':  '%>
-          <a href = "<%= urls[url]['longURL'] %>"><%= urls[url]["longURL"] %></a>
-          <a href="/urls/<%= url %>">edit</a>
+          <form method="POST" action="/urls/<%= url %>/delete">
+            shortUrl Generated ==>
+            <%= url + ':  '%>
+            <a href = "<%= urls[url]['longURL'] %>"><%= urls[url]["longURL"] %></a>
+            <a href="/urls/<%= url %>">edit</a>
             <input type="submit" value="delete">
-        </form>
-      </li>
-
+          </form>
+        </li>
       <% } %>
     </ul>
-
-
 </body>
 </html>

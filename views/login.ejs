@@ -5,36 +5,29 @@
 </head>
 <body>
 
+  <% if(users) { %>
+    <form method="POST" action="/login">
+      <label for="email">email:</label>
+      <input id="email" type="email" name="email" style="width: 300px">
+      <label for="password">password:</label>
+      <input id="password" type="password" name="password" style="width: 300px">
+      <input type="submit" value="update">
+    </form>
+  <% } %>
 
+  <% if(!users) { %>
+    <form method="POST" action="/login">
+      <label for="email">email:</label>
+      <input id="email" type="email" name="email" style="width: 300px">
+      <label for="password">password:</label>
+      <input id="password" type="password" name="password" style="width: 300px">
+      <input type="submit" value="login">
+    </form>
+  <% } %>
 
-    <% if(users) { %>
-      <form method="POST" action="/login">
-          <label for="email">email:</label>
-          <input id="email" type="email" name="email" style="width: 300px">
-          <label for="password">password:</label>
-          <input id="password" type="password" name="password" style="width: 300px">
-          <input type="submit" value="update">
-        </form>
-
-    <% } %>
-
-    <% if(!users) { %>
-      <form method="POST" action="/login">
-          <label for="email">email:</label>
-          <input id="email" type="email" name="email" style="width: 300px">
-          <label for="password">password:</label>
-          <input id="password" type="password" name="password" style="width: 300px">
-          <input type="submit" value="login">
-        </form>
-    <% } %>
-
-<form action="/register" method="GET">
+  <form action="/register" method="GET">
     <input type="submit" value="register">
-</form>
-
-
-
-
+  </form>
 
 </body>
 </html>
