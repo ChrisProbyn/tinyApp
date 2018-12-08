@@ -1,11 +1,12 @@
-"use strict"
+
+//adds the dependencies for this web app
 var PORT = 8080; // default port 8080
 var express = require("express");
 var cookieParser = require('cookie-parser');
 const bodyParser = require("body-parser");
 const bcrypt = require('bcrypt');
 var cookieSession = require('cookie-session')
-
+//allows my app to use these npm libraries
 var app = express();
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
